@@ -1,0 +1,130 @@
+version: '3.8'
+
+x-printer-postgres:
+  &printer-postgres-variables
+  POSTGRES_USER: 'printer'
+  POSTGRES_PASSWORD: 'printer'
+  POSTGRES_DB: 'printer'
+  POSTGRES_PORT: '5432'
+  POSTGRES_HOST: 'printer-postgres'
+
+x-printer-rabbitmq:
+  &printer-rabbitmq-variables
+  RABBITMQ_DEFAULT_USER: 'printer'
+  RABBITMQ_DEFAULT_PASS: 'printer'
+  RABBITMQ_DEFAULT_VHOST: '/'
+  RABBITMQ_PORT: '5672'
+  RABBITMQ_HOST: 'printer-rabbitmq'
+
+x-printer:
+  &printer-variables
+  <<: *printer-postgres-variables
+  <<: *printer-rabbitmq-variables
+  COUNTER_HOST: 'counter'
+  COUNTER_PORT: '8000'
+
+x-counter-postgres:
+  &counter-postgres-variables
+  POSTGRES_USER: 'counter'
+  POSTGRES_PASSWORD: 'counter'
+  POSTGRES_DB: 'counter'
+  POSTGRES_PORT: '5432'
+  POSTGRES_HOST: 'counter-postgres'
+
+x-counter:
+  &counter-variables
+  <<: *counter-postgres-variables
+
+
+services:
+
+  printer-rabbitmq:
+    image: rabbitmq:latest
+    environment: *printer-rabbitmq-variables
+    hostname: printer-rabbitmq
+    networks:
+      - printer
+    expose:
+      - '5672'
+
+  printer-postgres:
+    image: postgres:latest
+    environment: *printer-postgres-variables
+    hostname: printer-postgres
+    networks:
+      - printer
+    expose:
+      - '5432'
+    volumes:
+      - printer-postgres-data:/var/lib/postgresql/data
+
+  printer:
+    build: ./printer
+    environment: *printer-variables
+    hostname: printer
+    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    depends_on:
+      - printer-postgres
+      - printer-rabbitmq
+    ports:
+      - '8000:8000'
+    networks:
+      - printer
+    volumes:
+      - type: 'bind'
+        source: './printer'
+        target: '/app'
+
+  printer-celery:
+    build: ./printer
+    environment: *printer-variables
+    command: celery -A printer worker -l info
+    depends_on:
+      - printer-postgres
+      - printer-rabbitmq
+    hostname: printer-celery
+    networks:
+      - main
+      - printer
+    volumes:
+      - type: 'bind'
+        source: './printer'
+        target: '/app'
+
+  counter-postgres:
+    image: postgres:latest
+    environment: *counter-postgres-variables
+    hostname: counter-postgres
+    networks:
+      - counter
+    expose:
+      - '5432'
+    volumes:
+      - counter-postgres-data:/var/lib/postgresql/data
+
+  counter:
+    build: ./counter
+    environment: *counter-variables
+    hostname: counter
+    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    depends_on:
+      - counter-postgres
+    expose:
+      - '8000'
+    networks:
+      - main
+      - counter
+    volumes:
+      - type: 'bind'
+        source: './counter'
+        target: '/app'
+
+
+networks:
+  main:
+  printer:
+  counter:
+
+volumes:
+  printer-postgres-data:
+  counter-postgres-data:
