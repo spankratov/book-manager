@@ -116,7 +116,6 @@ RABBITMQ_HOST = os.environ['RABBITMQ_HOST']
 
 # celery
 CELERY_BROKER_URL = f'pyamqp://{RABBITMQ_USER}:{RABBITMQ_PASSWORD}@{RABBITMQ_HOST}:{RABBITMQ_PORT}/{RABBITMQ_VHOST}'
-#CELERY_BROKER_URL = 'pyamqp://guest:guest@printer-rabbitmq:5672//'
 
 # counter
 COUNTER_HOST = os.environ['COUNTER_HOST']
