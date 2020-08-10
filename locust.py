@@ -1,6 +1,6 @@
 import random
 
-from locust import between, HttpUser, task
+from locust import HttpUser, between, task
 
 
 class QuickstartUser(HttpUser):

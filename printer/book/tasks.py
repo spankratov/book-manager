@@ -1,6 +1,6 @@
+from book.models import CounterErrorLog
 from celery import shared_task
 
-from book.models import CounterErrorLog
 from counter.api import CounterApi
 
 

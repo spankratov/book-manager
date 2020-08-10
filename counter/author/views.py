@@ -1,11 +1,10 @@
 import json
 
+from author.models import Author
 from django.db.models import F
 from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
-
-from author.models import Author
 
 
 @require_POST
